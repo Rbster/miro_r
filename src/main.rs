@@ -1,12 +1,15 @@
-use axum::{response::IntoResponse, routing::get, Router};
+use axum::{extract::State, response::IntoResponse, routing::get, Router};
+use axum_macros::debug_handler;
 use axum_typed_websockets::{Message, WebSocket, WebSocketUpgrade};
 use serde::{Deserialize, Serialize};
 use std::{f64, time::Instant};
+use uuid::Uuid;
 
 #[tokio::main]
 async fn main() {
+    let state = MyState { users: vec![] };
     // Make a regular axum router
-    let app = Router::new().route("/ws", get(handler));
+    let app = Router::new().route("/ws", get(handler)).with_state(state);
 
     // Run it!
     axum::serve(
@@ -17,10 +20,12 @@ async fn main() {
     .unwrap();
 }
 
+#[debug_handler]
 async fn handler(
     // Upgrade the request to a WebSocket connection where the server sends
     // messages of type `ServerMsg` and the clients sends `ClientMsg`
     ws: WebSocketUpgrade<ServerMsg, ClientMsg>,
+    State(state): State<MyState>,
 ) -> impl IntoResponse {
     ws.on_upgrade(ping_pong_socket)
 }
@@ -58,14 +63,14 @@ enum ClientMsg {
     Pong,
 }
 
-#[derive(Debug)]
-struct State {
+#[derive(Debug, Clone)]
+struct MyState {
     users: Vec<User>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct User {
-    id: u64,
+    id: Uuid,
     x: f64,
     y: f64,
 }
