@@ -9,6 +9,8 @@ edition = "2021"
 axum = "0.7.5"
 axum-macros = "0.4.1"
 axum-typed-websockets = "0.6.0"
+diesel = { version = "2.2.2", features = ["postgres"] }
+dotenvy = "0.15.7"
 serde = { version = "1.0.204", features = ["derive"] }
 tokio = { version = "1.38.0", features = ["full"] }
 uuid = { version = "1.10.0", features = ["v4", "serde", "macro-diagnostics"] }

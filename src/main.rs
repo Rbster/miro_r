@@ -27,11 +27,11 @@ async fn handler(
     ws: WebSocketUpgrade<ServerMsg, ClientMsg>,
     State(state): State<MyState>,
 ) -> impl IntoResponse {
-    ws.on_upgrade(ping_pong_socket)
+    ws.on_upgrade(|socket| ping_pong_socket(socket, state))
 }
 
 // Send a ping and measure how long time it takes to get a pong back
-async fn ping_pong_socket(mut socket: WebSocket<ServerMsg, ClientMsg>) {
+async fn ping_pong_socket(mut socket: WebSocket<ServerMsg, ClientMsg>, myState: MyState) {
     let mut start = Instant::now();
     socket.send(Message::Item(ServerMsg::Ping)).await.ok();
 
@@ -56,11 +56,13 @@ async fn ping_pong_socket(mut socket: WebSocket<ServerMsg, ClientMsg>) {
 #[derive(Debug, Serialize)]
 enum ServerMsg {
     Ping,
+    Coord(Coord),
 }
 
 #[derive(Debug, Deserialize)]
 enum ClientMsg {
     Pong,
+    Coord(Coord),
 }
 
 #[derive(Debug, Clone)]
@@ -68,9 +70,14 @@ struct MyState {
     users: Vec<User>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 struct User {
     id: Uuid,
+    coord: Coord,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct Coord {
     x: f64,
     y: f64,
 }
