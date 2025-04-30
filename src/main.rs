@@ -31,19 +31,30 @@ async fn handler(
 }
 
 // Send a ping and measure how long time it takes to get a pong back
-async fn ping_pong_socket(mut socket: WebSocket<ServerMsg, ClientMsg>, myState: MyState) {
+async fn ping_pong_socket(mut socket: WebSocket<ServerMsg, ClientMsg>, mut myState: MyState) {
     let mut start = Instant::now();
     socket.send(Message::Item(ServerMsg::Ping)).await.ok();
 
     println!("started");
 
+    myState.users.push(User {
+        id: Uuid::new_v4(),
+        coord: Coord { x: 0.0, y: 0.0 },
+    });
+    println!("{:?}", myState);
+
     while let Some(msg) = socket.recv().await {
         match msg {
-            Ok(Message::Item(ClientMsg::Pong)) => {
-                println!("ping: {:?}", start.elapsed());
-                start = Instant::now();
-                socket.send(Message::Item(ServerMsg::Ping)).await.ok();
-            }
+            Ok(Message::Item(clientMsg)) => match clientMsg {
+                ClientMsg::Pong => {
+                    println!("ping: {:?}", start.elapsed());
+                    start = Instant::now();
+                    socket.send(Message::Item(ServerMsg::Ping)).await.ok();
+                }
+                ClientMsg::Coord(coord) => {
+                    println!("{:?}", coord);
+                }
+            },
             Ok(_) => {}
             Err(err) => {
                 eprintln!("got error: {}", err);
@@ -67,7 +78,7 @@ enum ClientMsg {
 
 #[derive(Debug, Clone)]
 struct MyState {
-    users: Vec<User>,
+    pub users: Vec<User>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
